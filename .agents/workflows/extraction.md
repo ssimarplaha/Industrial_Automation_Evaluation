@@ -19,6 +19,7 @@ The system Python may not include `pdfplumber`; the bundled runtime does.
 Expected output files:
 
 - `output/siemens_financials_wide.tsv`
+- `output/siemens_financials.xlsx`
 - `output/siemens_financials_audit.json`
 - `output/siemens_financials_verification_report.json`
 
@@ -26,5 +27,7 @@ Expected output files:
 
 - Audit metadata should report 34 processed unique PDFs and 1 skipped duplicate.
 - Output columns should start at `Q109` and end at `Q226`.
+- Workbook sheets should be exactly `Quarterly` and `Yearly`.
+- Yearly columns should include only complete fiscal years.
 - Reconstructed segment values should be flagged in audit JSON.
 - Verification report metadata should report `"passed": true`.

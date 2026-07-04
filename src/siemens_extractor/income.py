@@ -1,3 +1,5 @@
+"""Extract consolidated income statement rows and source evidence from PDFs."""
+
 from __future__ import annotations
 
 from .config import INCOME_PATTERNS
@@ -10,6 +12,7 @@ PARSER_FAMILY = "income_statement"
 
 
 def find_income_page(pages: list[str]) -> tuple[int, str]:
+    """Return the extracted page containing the Siemens income statement."""
     fallback: tuple[int, str] | None = None
     for index, text in enumerate(pages, start=1):
         lines = [line.strip() for line in text.splitlines()]
@@ -23,6 +26,7 @@ def find_income_page(pages: list[str]) -> tuple[int, str]:
 
 
 def _is_income_statement_heading(line: str) -> bool:
+    """Recognize full and condensed Siemens income statement headings."""
     upper = line.upper()
     return upper in {
         "CONSOLIDATED STATEMENTS OF INCOME",
@@ -33,6 +37,7 @@ def _is_income_statement_heading(line: str) -> bool:
 
 
 def select_first_two(values: list[int], label: str, source_pdf: str) -> list[int]:
+    """Select current and prior-year values or fail with source context."""
     if len(values) < 2:
         raise ValueError(f"{source_pdf}: expected at least two values for {label!r}, got {values}")
     return values[:2]
@@ -46,6 +51,7 @@ def native_source(
     row: str,
     value: int,
 ) -> SourceRecord:
+    """Build native audit evidence for an income statement row."""
     return SourceRecord(
         source_pdf=document.path.name,
         page=page_number,
@@ -67,6 +73,7 @@ def calculated_source(
     value: int,
     note: str = "",
 ) -> SourceRecord:
+    """Build calculated audit evidence for income statement bridge rows."""
     return SourceRecord(
         source_pdf=document.path.name,
         page=page_number,
@@ -81,6 +88,7 @@ def calculated_source(
 
 
 def extract_income_statement(document: PdfDocument) -> dict[str, QuarterData]:
+    """Extract current and prior-year income rows from one Siemens PDF."""
     page_number, text = find_income_page(document.pages)
     current_code = quarter_code(document.quarter, document.fiscal_year)
     prior_code = quarter_code(document.quarter, document.fiscal_year - 1)

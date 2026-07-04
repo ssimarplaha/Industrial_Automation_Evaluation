@@ -1,3 +1,5 @@
+"""Static row order, parser patterns, and segment mappings for the TSV contract."""
+
 from __future__ import annotations
 
 import re

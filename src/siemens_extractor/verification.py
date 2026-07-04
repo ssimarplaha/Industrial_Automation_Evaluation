@@ -1,3 +1,5 @@
+"""Verify TSV, audit JSON, and PDF source-line consistency after extraction."""
+
 from __future__ import annotations
 
 import json
@@ -10,6 +12,7 @@ from .numbers import int_tokens
 from .periods import quarter_sort_key
 from .supplemental_balance import SUPPLEMENTAL_BALANCE_DIR
 from .verification_rules import UNKNOWN, calculated_values_equal, expected_calculated_value
+from .verification_workbook import verify_workbook_outputs
 from .writer import format_cell
 
 
@@ -21,7 +24,9 @@ def verify_outputs(
     audit_path: Path,
     input_dir: Path,
     report_path: Path | None = None,
+    workbook_path: Path | None = None,
 ) -> dict[str, Any]:
+    """Run all output checks and optionally write the verification report."""
     audit = json.loads(audit_path.read_text())
     columns, rows, tsv_issues = _read_tsv(tsv_path)
     quarters = audit.get("quarters", {})
@@ -42,11 +47,26 @@ def verify_outputs(
 
     _verify_tsv_cells(rows, columns, quarters, checked_values, issues)
     _verify_audit_values(quarters, input_dir, page_cache, checked_values, issues, source_type_counts)
+    workbook_metadata: dict[str, Any] = {}
+    if workbook_path is not None:
+        workbook_metadata, workbook_checked_values, workbook_issues = verify_workbook_outputs(
+            workbook_path,
+            tsv_path,
+            audit,
+        )
+        checked_values.extend(workbook_checked_values)
+        issues.extend(workbook_issues)
 
     failed_validations = [
         {"quarter": code, "validation": validation}
         for code, quarter in quarters.items()
         for validation in quarter.get("validations", [])
+        if not validation.get("passed")
+    ]
+    failed_year_validations = [
+        {"year": code, "validation": validation}
+        for code, year in audit.get("years", {}).items()
+        for validation in year.get("validations", [])
         if not validation.get("passed")
     ]
     for item in failed_validations:
@@ -55,6 +75,14 @@ def verify_outputs(
             "failed_validation",
             f"{item['quarter']}: audit validation failed.",
             quarter=item["quarter"],
+            validation=item["validation"],
+        )
+    for item in failed_year_validations:
+        _add_issue(
+            issues,
+            "failed_year_validation",
+            f"{item['year']}: annual audit validation failed.",
+            year=item["year"],
             validation=item["validation"],
         )
 
@@ -82,6 +110,7 @@ def verify_outputs(
             ),
             "source_type_counts": dict(sorted(source_type_counts.items())),
             "issue_counts": dict(sorted(issue_counts.items())),
+            **workbook_metadata,
         },
         "checked_values": checked_values,
         "issues": issues,
@@ -92,6 +121,7 @@ def verify_outputs(
 
 
 def _read_tsv(path: Path) -> tuple[list[str], dict[str, dict[str, str]], list[dict[str, Any]]]:
+    """Read the TSV into column and row maps while collecting structural issues."""
     issues: list[dict[str, Any]] = []
     lines = path.read_text().splitlines()
     if not lines:
@@ -131,6 +161,7 @@ def _verify_tsv_cells(
     checked_values: list[dict[str, Any]],
     issues: list[dict[str, Any]],
 ) -> None:
+    """Check each TSV cell against the formatted audit value and source presence."""
     for row, by_column in rows.items():
         for column in columns:
             actual = by_column.get(column, "")
@@ -180,6 +211,7 @@ def _verify_audit_values(
     issues: list[dict[str, Any]],
     source_type_counts: Counter[str],
 ) -> None:
+    """Check audit values, source types, normalized fields, and replay rules."""
     for code, quarter in quarters.items():
         values = quarter.get("values", {})
         sources = quarter.get("sources", {})
@@ -242,6 +274,7 @@ def _verify_audit_values(
 
 
 def _source_value_matches(value: Any, normalized_value: Any, row: str) -> bool:
+    """Compare stored normalized source values against audit values or display text."""
     if value == normalized_value:
         return True
     if isinstance(normalized_value, str):
@@ -257,6 +290,7 @@ def _verify_native_source(
     page_cache: dict[str, list[str]],
     issues: list[dict[str, Any]],
 ) -> None:
+    """Verify native audit evidence by reopening the recorded source PDF page."""
     source_pdf = source.get("source_pdf")
     page_number = int(source.get("page") or 0)
     if not source_pdf or page_number <= 0:
@@ -337,6 +371,7 @@ def _pages_for_source(
     page_cache: dict[str, list[str]],
     issues: list[dict[str, Any]],
 ) -> list[str] | None:
+    """Load and cache source PDF pages, recording a verification issue if missing."""
     if source_pdf not in page_cache:
         path = _source_pdf_path(input_dir, source_pdf)
         if not path.exists():
@@ -352,6 +387,7 @@ def _pages_for_source(
 
 
 def _source_pdf_path(input_dir: Path, source_pdf: str) -> Path:
+    """Resolve main and supplemental source PDF paths used in audit evidence."""
     source_path = Path(source_pdf)
     candidates = [source_path if source_path.is_absolute() else input_dir / source_path]
     if not source_path.is_absolute():
@@ -363,6 +399,7 @@ def _source_pdf_path(input_dir: Path, source_pdf: str) -> Path:
 
 
 def _matching_page_lines(raw_line: str, page_text: str) -> list[str]:
+    """Find normalized PDF page lines that match a recorded raw audit line."""
     raw_norm = _normalize_line(raw_line)
     if not raw_norm:
         return []
@@ -375,16 +412,19 @@ def _matching_page_lines(raw_line: str, page_text: str) -> list[str]:
 
 
 def _source_tokens_match(source_tokens: list[int], raw_values: list[int]) -> bool:
+    """Allow raw audit values to match full or trailing PDF line token lists."""
     if source_tokens == raw_values:
         return True
     return len(source_tokens) > len(raw_values) and source_tokens[-len(raw_values) :] == raw_values
 
 
 def _normalize_line(line: str) -> str:
+    """Collapse whitespace so PDF text extraction differences do not matter."""
     return " ".join(line.split())
 
 
 def _expected_native_value(code: str, row: str, source: dict[str, Any]) -> Any:
+    """Replay the parser's native column selection for one audit source."""
     raw_values = source.get("raw_values", [])
     index = _native_value_index(code, source)
     if index is None or index >= len(raw_values):
@@ -394,6 +434,7 @@ def _expected_native_value(code: str, row: str, source: dict[str, Any]) -> Any:
 
 
 def _native_value_index(code: str, source: dict[str, Any]) -> int | None:
+    """Return the raw value index implied by source period and parser family."""
     source_pdf = source.get("source_pdf")
     if not source_pdf:
         return None
@@ -424,6 +465,7 @@ def _verify_reconstructed_source(
     source: dict[str, Any],
     issues: list[dict[str, Any]],
 ) -> None:
+    """Verify reconstructed values equal the sum of their audited components."""
     raw_values = source.get("raw_values", [])
     expected = sum(int(value) for value in raw_values)
     if not raw_values:
@@ -455,6 +497,7 @@ def _verify_calculated_source(
     quarters: dict[str, Any],
     issues: list[dict[str, Any]],
 ) -> None:
+    """Verify calculated audit values against pure calculation replay rules."""
     expected = expected_calculated_value(code, row, source, quarters)
     if expected is UNKNOWN:
         _add_issue(
@@ -491,6 +534,7 @@ def _verify_calculated_source(
 
 
 def _add_issue(issues: list[dict[str, Any]], issue_type: str, message: str, **extra: Any) -> None:
+    """Append a structured verification issue to the report payload."""
     issue = {"type": issue_type, "message": message}
     issue.update(extra)
     issues.append(issue)

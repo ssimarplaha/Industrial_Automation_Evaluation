@@ -1,3 +1,5 @@
+"""Extract and normalize Siemens balance-sheet rows from PDF text."""
+
 from __future__ import annotations
 
 import re
@@ -84,6 +86,7 @@ BALANCE_ROW_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 
 
 def extract_balance_sheet(document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+    """Attach current and prior-year balance-sheet values to extracted quarters."""
     page_number, text = find_balance_sheet_page(document.pages)
     parsed_rows = parse_balance_rows(text)
     current_code = quarter_code(document.quarter, document.fiscal_year)
@@ -94,6 +97,7 @@ def extract_balance_sheet(document: PdfDocument, quarters: dict[str, QuarterData
 
 
 def find_balance_sheet_page(pages: list[str]) -> tuple[int, str]:
+    """Return the page most likely to contain the statement of financial position."""
     best_candidate: tuple[int, int, int, str] | None = None
     for index, text in enumerate(pages, start=1):
         lower = text.lower()
@@ -113,6 +117,7 @@ def find_balance_sheet_page(pages: list[str]) -> tuple[int, str]:
 
 
 def parse_balance_rows(text: str) -> dict[str, tuple[str, list[int]]]:
+    """Parse known balance-sheet rows from one extracted PDF page."""
     rows: dict[str, tuple[str, list[int]]] = {}
     for raw_line in text.splitlines():
         line = " ".join(raw_line.strip().split())
@@ -130,6 +135,7 @@ def parse_balance_rows(text: str) -> dict[str, tuple[str, list[int]]]:
 
 
 def normalize_balance_values(row: str, values: list[int]) -> list[int]:
+    """Drop footnote-number prefixes that pdfplumber can capture as values."""
     if row in FOOTNOTE_PREFIX_ROWS and len(values) > 2 and abs(values[0]) <= 20:
         return values[1:]
     return values
@@ -143,6 +149,7 @@ def assign_balance_values(
     page_number: int,
     value_index: int,
 ) -> None:
+    """Copy parsed balance-sheet values into a quarter with native source evidence."""
     quarter = quarters.get(code)
     if quarter is None:
         return

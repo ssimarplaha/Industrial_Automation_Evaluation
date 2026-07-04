@@ -1,3 +1,5 @@
+"""Route Siemens fiscal years to the segment parser for that reporting era."""
+
 from __future__ import annotations
 
 from .base import SegmentParser
@@ -8,6 +10,7 @@ from .modern_2020 import ModernSegmentParser
 
 
 def segment_parser_for(fiscal_year: int) -> SegmentParser:
+    """Return the configured segment parser for a supported fiscal year."""
     if 2010 <= fiscal_year <= 2014:
         return LegacySectorParser()
     if fiscal_year == 2016:

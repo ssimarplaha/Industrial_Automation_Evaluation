@@ -1,3 +1,5 @@
+"""Extract native 2010-2014 legacy Siemens sector revenue rows."""
+
 from __future__ import annotations
 
 import re
@@ -10,9 +12,12 @@ from .base import SegmentParser
 
 
 class LegacySectorParser(SegmentParser):
+    """Parser for old-style Additional Information sector tables."""
+
     parser_family = "legacy_sector_2010_2014"
 
     def extract(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Populate native Industry, Energy, and Healthcare sector rows."""
         page_number, text = self._find_segment_page(document.pages)
         current_code = quarter_code(document.quarter, document.fiscal_year)
         prior_code = quarter_code(document.quarter, document.fiscal_year - 1)
@@ -47,6 +52,7 @@ class LegacySectorParser(SegmentParser):
                 )
 
     def _find_segment_page(self, pages: list[str]) -> tuple[int, str]:
+        """Find the Additional Information page containing all legacy sectors."""
         for index, text in enumerate(pages, start=1):
             if "ADDITIONAL INFORMATION (I)" not in text:
                 continue

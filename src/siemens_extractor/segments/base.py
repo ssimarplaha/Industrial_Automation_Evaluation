@@ -1,3 +1,5 @@
+"""Shared segment-parser abstractions and reconstruction helpers."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -8,14 +10,18 @@ from ..periods import quarter_code
 
 
 class SegmentParser(ABC):
+    """Interface for parser families that populate segment revenue rows."""
+
     parser_family: str
 
     @abstractmethod
     def extract(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Populate segment rows for the document's current and prior-year quarters."""
         raise NotImplementedError
 
 
 def blank_bucket_values(document: PdfDocument) -> dict[str, dict[str, int]]:
+    """Create zeroed Industry/Energy/Healthcare buckets for both quarter columns."""
     current_code = quarter_code(document.quarter, document.fiscal_year)
     prior_code = quarter_code(document.quarter, document.fiscal_year - 1)
     return {
@@ -25,6 +31,7 @@ def blank_bucket_values(document: PdfDocument) -> dict[str, dict[str, int]]:
 
 
 def blank_bucket_sources() -> dict[str, list[SourceRecord]]:
+    """Create empty source buckets for reconstructed segment evidence."""
     return {"Industry": [], "Energy": [], "Healthcare": []}
 
 
@@ -39,6 +46,7 @@ def source_record(
     note: str,
     source_type: SourceType = "reconstructed",
 ) -> SourceRecord:
+    """Build a segment source record with parser-family provenance."""
     return SourceRecord(
         source_pdf=document.path.name,
         page=page,
@@ -59,6 +67,7 @@ def first_revenue_after_heading(
     note: str,
     page_numbers: set[int] | None = None,
 ) -> tuple[dict[str, dict[str, int]], dict[str, dict[str, list[SourceRecord]]], set[str]]:
+    """Collect the first Revenue row after each known segment heading."""
     current_code = quarter_code(document.quarter, document.fiscal_year)
     prior_code = quarter_code(document.quarter, document.fiscal_year - 1)
     bucket_values = blank_bucket_values(document)
@@ -114,6 +123,7 @@ def assign_bucket_totals(
     rows: list[str],
     note: str,
 ) -> None:
+    """Assign reconstructed bucket totals and component evidence to quarters."""
     for code in [quarter_code(document.quarter, document.fiscal_year), quarter_code(document.quarter, document.fiscal_year - 1)]:
         for row in rows:
             value = bucket_values[code][row]

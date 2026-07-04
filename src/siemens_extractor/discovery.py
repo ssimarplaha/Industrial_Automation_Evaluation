@@ -1,3 +1,5 @@
+"""Find, deduplicate, identify, and text-extract local Siemens PDF inputs."""
+
 from __future__ import annotations
 
 import hashlib
@@ -10,6 +12,7 @@ from .periods import quarter_code
 
 
 def sha256(path: Path) -> str:
+    """Return the SHA-256 digest used to detect duplicate PDFs."""
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
@@ -18,6 +21,7 @@ def sha256(path: Path) -> str:
 
 
 def unique_pdfs(input_dir: Path) -> tuple[list[tuple[Path, str]], list[dict[str, str]]]:
+    """Return unique top-level PDFs and audit records for skipped duplicates."""
     seen: dict[str, Path] = {}
     duplicates: list[dict[str, str]] = []
     result: list[tuple[Path, str]] = []
@@ -34,6 +38,7 @@ def unique_pdfs(input_dir: Path) -> tuple[list[tuple[Path, str]], list[dict[str,
 
 
 def pdf_fiscal_period(path: Path) -> tuple[int, int]:
+    """Infer fiscal year and quarter from the Siemens PDF filename convention."""
     match = re.search(r"(?P<year>20\d{2})-q(?P<quarter>[1-4])", path.name, re.I)
     if not match:
         raise ValueError(f"Cannot detect fiscal period from filename: {path.name}")
@@ -41,6 +46,7 @@ def pdf_fiscal_period(path: Path) -> tuple[int, int]:
 
 
 def extract_pages(path: Path) -> list[str]:
+    """Extract page text with pdfplumber using the extractor's tolerances."""
     try:
         import pdfplumber
     except ImportError as exc:  # pragma: no cover - exercised only without deps.
@@ -57,6 +63,7 @@ def extract_pages(path: Path) -> list[str]:
 
 
 def load_documents(input_dir: Path) -> tuple[list[PdfDocument], list[dict[str, str]]]:
+    """Load unique PDF inputs as parsed document records plus duplicate metadata."""
     unique, duplicates = unique_pdfs(input_dir)
     documents: list[PdfDocument] = []
     for path, digest in unique:

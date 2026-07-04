@@ -1,3 +1,5 @@
+"""Cross-row validation, calculated rows, overrides, and sample warnings."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,6 +10,7 @@ from .periods import quarter_code, quarter_sort_key
 
 
 def add_other_segment_values(quarters: dict[str, QuarterData]) -> None:
+    """Calculate the residual Other segment from total and reported buckets."""
     for quarter in quarters.values():
         missing = [row for row in ["Industry", "Energy", "Healthcare", "Total Revenue"] if row not in quarter.values]
         if missing:
@@ -34,7 +37,9 @@ def add_other_segment_values(quarters: dict[str, QuarterData]) -> None:
 
 
 def validate_quarter(quarter: QuarterData) -> None:
+    """Validate income-statement and balance-sheet bridges for one quarter."""
     def check(name: str, actual: int, expected: int, tolerance: int = 1) -> None:
+        """Record one validation result and raise on material mismatch."""
         diff = actual - expected
         passed = abs(diff) <= tolerance
         quarter.validations.append(
@@ -81,11 +86,13 @@ def validate_quarter(quarter: QuarterData) -> None:
 
 
 def validate_balance_sheet(quarter: QuarterData) -> None:
+    """Validate balance-sheet subtotal and total bridges when data is present."""
     values = quarter.values
     if "Total Assets" not in values:
         return
 
     def check(name: str, actual: int, expected: int, tolerance: int = 2) -> None:
+        """Record one balance-sheet validation and raise on mismatch."""
         diff = actual - expected
         passed = abs(diff) <= tolerance
         quarter.validations.append(
@@ -105,6 +112,7 @@ def validate_balance_sheet(quarter: QuarterData) -> None:
             )
 
     def present_sum(rows: list[str]) -> int:
+        """Sum only component rows reported for this quarter."""
         return sum(int(values[row]) for row in rows if row in values)
 
     current_asset_rows = [
@@ -176,6 +184,7 @@ def validate_balance_sheet(quarter: QuarterData) -> None:
 
 
 def apply_yoy(quarters: dict[str, QuarterData]) -> None:
+    """Populate year-over-year percentage rows from prior-year quarter values."""
     for code, quarter in quarters.items():
         year, fiscal_quarter = quarter_sort_key(code)
         previous_code = quarter_code(fiscal_quarter, year - 1)
@@ -206,6 +215,7 @@ def apply_yoy(quarters: dict[str, QuarterData]) -> None:
 
 
 def apply_overrides(quarters: dict[str, QuarterData], overrides_path: Path | None) -> list[str]:
+    """Apply explicit manual overrides and mark their audit source type."""
     if not overrides_path:
         return []
     if not overrides_path.exists():
@@ -236,6 +246,7 @@ def apply_overrides(quarters: dict[str, QuarterData], overrides_path: Path | Non
 
 
 def add_sample_reconciliation_warnings(quarters: dict[str, QuarterData]) -> list[str]:
+    """Record known differences between legacy samples and PDF-derived values."""
     warnings: list[str] = []
     for code, expected_rows in SAMPLE_EXPECTATIONS.items():
         quarter = quarters.get(code)

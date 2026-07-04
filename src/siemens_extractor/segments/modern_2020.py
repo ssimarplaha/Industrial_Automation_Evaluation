@@ -1,3 +1,5 @@
+"""Map modern 2020-2026 Siemens segments into the fixed TSV template."""
+
 from __future__ import annotations
 
 from ..config import MODERN_TO_BUCKET
@@ -32,9 +34,12 @@ MODERN_REQUIRED_ROWS = {
 
 
 class ModernSegmentParser(SegmentParser):
+    """Parser for modern Siemens segment tables and native modern rows."""
+
     parser_family = "modern_2020_2026"
 
     def extract(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Populate reconstructed old buckets plus native modern segment rows."""
         bucket_values, bucket_sources, found = first_revenue_after_heading(
             document,
             MODERN_TO_BUCKET,
@@ -60,6 +65,7 @@ class ModernSegmentParser(SegmentParser):
         self._extract_native_rows(document, quarters)
 
     def _extract_native_rows(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Extract modern rows that are exported directly under their own labels."""
         current_code = quarter_code(document.quarter, document.fiscal_year)
         prior_code = quarter_code(document.quarter, document.fiscal_year - 1)
         found: set[str] = set()
@@ -127,6 +133,7 @@ class ModernSegmentParser(SegmentParser):
         prior_code: str,
         found: set[str],
     ) -> None:
+        """Store one native modern segment row for current and prior-year quarters."""
         if row in found:
             return
         values = int_tokens(line)

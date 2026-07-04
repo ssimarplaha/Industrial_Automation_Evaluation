@@ -14,8 +14,9 @@ The extractor is a Python package under `src/siemens_extractor/` with a thin com
 4. `balance_sheet.py` extracts statement-of-financial-position rows and hidden bridge components.
 5. `metrics.py` calculates audited growth, liquidity, working-capital, and leverage rows.
 6. `validation.py` calculates residual rows, Y/Y rows, expenses, EBIT, overrides, and accounting bridge checks.
-7. `writer.py` writes the Excel-pasteable TSV.
-8. `audit.py` writes source and validation evidence for every quarter.
+7. `yearly.py` derives complete fiscal-year columns from audited quarter columns.
+8. `writer.py` writes the Excel-pasteable TSV and derived two-sheet workbook.
+9. `audit.py` writes source and validation evidence for every quarter and year.
 
 ## Ownership Boundaries
 
@@ -24,6 +25,7 @@ The extractor is a Python package under `src/siemens_extractor/` with a thin com
 - Quarter/source dataclasses belong in `models.py`.
 - Public CLI behavior belongs in `pipeline.py`.
 - Balance-sheet and metric logic belong in their dedicated modules, not in the segment parsers.
+- Yearly aggregation belongs in `yearly.py`; it must derive from audited quarterly data, not new PDF parsing.
 
 ## Split Guidance
 

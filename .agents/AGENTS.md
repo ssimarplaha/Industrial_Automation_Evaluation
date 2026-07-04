@@ -5,17 +5,18 @@ engineering standards in this folder are subordinate when they conflict with
 this repo's TSV, audit, PDF, verification, or runtime-command contracts.
 
 This repo extracts Siemens financial data from local PDFs into an
-Excel-pasteable TSV, detailed audit JSON, and verification report. Preserve
-extraction behavior unless the user explicitly asks for a data or mapping
-change.
+Excel-pasteable TSV, derived workbook, detailed audit JSON, and verification
+report. Preserve extraction behavior unless the user explicitly asks for a
+data or mapping change.
 
 ## Hard Rules
 
 - Keep public imports stable from `src/extract_siemens_financials.py`: `extract_all`, `int_tokens`, and `main`.
 - Do not replace TSV with XLSX. `output/siemens_financials_wide.tsv` is the source of truth for v1.
+- `output/siemens_financials.xlsx` is a derived convenience workbook with `Quarterly` and `Yearly` sheets.
 - Do not edit PDFs under `data/`.
 - Do not hand-edit generated files under `output/`; change them only by regenerating through the extractor.
-- `output/siemens_financials_audit.json` must explain every exported non-empty TSV value.
+- `output/siemens_financials_audit.json` must explain every exported non-empty TSV and workbook value.
 - `output/siemens_financials_verification_report.json` must report a pass after regenerated outputs.
 - Balance-sheet blanks are valid when the source PDF does not contain that quarter's native value.
 - Reconstructed values must stay explicitly flagged in audit evidence.

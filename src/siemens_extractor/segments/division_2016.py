@@ -1,3 +1,5 @@
+"""Reconstruct 2016 old-bucket segments from division-level revenue rows."""
+
 from __future__ import annotations
 
 from ..config import DIVISION_TO_BUCKET_2016
@@ -6,9 +8,12 @@ from .base import SegmentParser, assign_bucket_totals, first_revenue_after_headi
 
 
 class Division2016Parser(SegmentParser):
+    """Parser for FY2016 Siemens division layout during the segment transition."""
+
     parser_family = "division_2016"
 
     def extract(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Map required 2016 divisions into Industry, Energy, and Healthcare."""
         bucket_values, bucket_sources, found = first_revenue_after_heading(
             document,
             DIVISION_TO_BUCKET_2016,

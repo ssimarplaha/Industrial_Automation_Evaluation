@@ -1,3 +1,5 @@
+"""Repository hygiene tests for Siemens-specific agent and LOC contracts."""
+
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -6,7 +8,10 @@ from siemens_extractor.loc_policy import line_count_violations, maintained_files
 
 
 class RepoHygieneTests(unittest.TestCase):
+    """Guardrails that keep Siemens repo instructions and line counts enforceable."""
+
     def agent_doc_paths(self, root):
+        """Return all agent instruction documents that must be counted."""
         return [root / "AGENTS.md", *sorted((root / ".agents").rglob("*.md"))]
 
     def test_current_repo_respects_line_count_policy(self):
@@ -50,6 +55,7 @@ class RepoHygieneTests(unittest.TestCase):
         self.assertNotIn("output/siemens_financials_audit.json", scanned)
         self.assertNotIn("output/siemens_financials_verification_report.json", scanned)
         self.assertNotIn("output/siemens_financials_wide.tsv", scanned)
+        self.assertNotIn("output/siemens_financials.xlsx", scanned)
 
     def test_source_file_above_ceiling_fails(self):
         with TemporaryDirectory() as temp_dir:

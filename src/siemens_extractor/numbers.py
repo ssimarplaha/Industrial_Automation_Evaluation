@@ -1,3 +1,5 @@
+"""Numeric and label parsing helpers for extracted Siemens PDF lines."""
+
 from __future__ import annotations
 
 import re
@@ -23,5 +25,6 @@ def int_tokens(line: str) -> list[int]:
 
 
 def clean_label(line: str) -> str:
+    """Strip dotted leaders, value columns, and repeated whitespace from a row label."""
     label = re.split(r"\.{2,}|\s{2,}(?=\(?-?\d|—|-)", line.strip(), maxsplit=1)[0]
     return re.sub(r"\s+", " ", label).strip()

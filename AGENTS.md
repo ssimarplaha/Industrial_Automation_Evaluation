@@ -1,9 +1,9 @@
 # Siemens Extractor Agent Entrypoint
 
 This repository extracts Siemens financial data from local PDFs into a
-paste-ready TSV, audit JSON, and verification report. Use this file as the
-root router only; `.agents/AGENTS.md` is the source of truth for Siemens
-extractor rules.
+paste-ready TSV, derived workbook, audit JSON, and verification report. Use
+this file as the root router only; `.agents/AGENTS.md` is the source of truth
+for Siemens extractor rules.
 
 Siemens-specific guidance overrides reusable engineering standards whenever
 they conflict.
@@ -28,8 +28,10 @@ there when they differ from the Siemens workflow.
 - PDFs under `data/` are local source material and must not be edited.
 - Generated files under `output/` must change only by running the extractor.
 - `output/siemens_financials_wide.tsv` is the source-of-truth export for v1.
+- `output/siemens_financials.xlsx` is a derived workbook with `Quarterly` and
+  `Yearly` sheets; it must not replace the TSV source-of-truth contract.
 - `output/siemens_financials_audit.json` must explain every exported non-empty
-  TSV value.
+  TSV and workbook value.
 - `output/siemens_financials_verification_report.json` must pass after outputs
   are regenerated.
 - Balance-sheet blanks are valid when the source PDF does not contain that

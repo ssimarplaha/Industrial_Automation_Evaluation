@@ -1,3 +1,5 @@
+"""Line-count policy enforcement for maintained Siemens extractor files."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,6 +24,8 @@ EXCLUDED_DIRS = {
 
 @dataclass(frozen=True)
 class LineCountViolation:
+    """A soft or hard line-count policy violation for one maintained file."""
+
     path: Path
     line_count: int
     limit: int
@@ -30,6 +34,7 @@ class LineCountViolation:
 
 
 def maintained_files(root: Path) -> list[Path]:
+    """Return source, test, and agent-doc files covered by the LOC policy."""
     files: list[Path] = []
     for path in root.rglob("*"):
         if not path.is_file():
@@ -49,6 +54,7 @@ def maintained_files(root: Path) -> list[Path]:
 
 
 def count_lines(path: Path) -> int:
+    """Count physical lines in a UTF-8 maintained file."""
     with path.open("r", encoding="utf-8") as handle:
         return sum(1 for _ in handle)
 
@@ -57,6 +63,7 @@ def line_count_violations(
     root: Path,
     allowlist: set[str] | None = None,
 ) -> list[LineCountViolation]:
+    """Collect line-count policy violations, honoring soft-limit allowlists."""
     allowed = allowlist or set()
     violations: list[LineCountViolation] = []
     for path in maintained_files(root):

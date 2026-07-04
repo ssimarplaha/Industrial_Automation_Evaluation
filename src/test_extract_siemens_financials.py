@@ -1,7 +1,11 @@
+"""Regression tests for Siemens extraction, audit, TSV, and verification contracts."""
+
 import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+from openpyxl import load_workbook
 
 from extract_siemens_financials import extract_all, int_tokens
 from siemens_extractor.audit import write_audit
@@ -12,13 +16,18 @@ from siemens_extractor.supplemental_balance import (
     apply_supplemental_balance_documents,
 )
 from siemens_extractor.verification import verify_outputs
-from siemens_extractor.writer import format_cell, write_tsv
+from siemens_extractor.writer import format_cell, write_tsv, write_workbook
+from siemens_extractor.yearly import calculate_years, fiscal_year_days
 
 
 class SiemensExtractorTests(unittest.TestCase):
+    """End-to-end regression tests over the local Siemens PDF fixture set."""
+
     @classmethod
     def setUpClass(cls):
+        """Extract the fixture set once because the PDF-backed pipeline is expensive."""
         cls.quarters, cls.metadata = extract_all(Path("data"))
+        cls.years = calculate_years(cls.quarters)
 
     def test_data_layout_is_used(self):
         self.assertEqual(len(self.metadata["processed_files"]), 34)
@@ -258,13 +267,68 @@ class SiemensExtractorTests(unittest.TestCase):
         self.assertTrue(lines)
         self.assertTrue(all(not line.endswith((" ", "\t")) for line in lines))
 
+    def test_yearly_columns_include_only_complete_years(self):
+        columns = list(self.years)
+        self.assertEqual(columns[0], "FY2009")
+        self.assertEqual(columns[-1], "FY2024")
+        self.assertNotIn("FY2025", columns)
+        self.assertNotIn("FY2026", columns)
+
+    def test_yearly_flow_rows_sum_four_quarters(self):
+        expected = sum(self.quarters[code].values["Net Income"] for code in ["Q124", "Q224", "Q324", "Q424"])
+        self.assertEqual(self.years["FY2024"].values["Net Income"], expected)
+        self.assertEqual(self.years["FY2024"].sources["Net Income"].source_type, "calculated")
+
+    def test_yearly_balance_rows_use_q4_value(self):
+        self.assertEqual(self.years["FY2024"].values["Total Assets"], self.quarters["Q424"].values["Total Assets"])
+        self.assertEqual(self.years["FY2024"].sources["Total Assets"].source_type, "calculated")
+
+    def test_yearly_yoy_and_metrics_are_recomputed(self):
+        fy2024 = self.years["FY2024"].values
+        fy2023 = self.years["FY2023"].values
+        expected_yoy = fy2024["Siemens (continuing operations)"] / fy2023["Siemens (continuing operations)"] - 1
+        expected_current_ratio = fy2024["Total Current Assets (TCA)"] / fy2024["Total Current Liabilities"]
+        average_receivables = (fy2023["Trade and OR"] + fy2024["Trade and OR"]) / 2
+        expected_dso = average_receivables / fy2024["Total Revenue"] * fiscal_year_days(2024)
+
+        self.assertAlmostEqual(fy2024["Revenue Y/Y%"], expected_yoy)
+        self.assertAlmostEqual(fy2024["Current Ratio"], expected_current_ratio)
+        self.assertAlmostEqual(fy2024["DSO"], expected_dso)
+
+    def test_workbook_has_quarterly_and_yearly_sheets(self):
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "siemens_financials.xlsx"
+            write_workbook(path, self.quarters, self.years)
+            workbook = load_workbook(path, data_only=True)
+
+        self.assertEqual(workbook.sheetnames, ["Quarterly", "Yearly"])
+
+    def test_workbook_quarterly_sheet_matches_tsv(self):
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            tsv_path = root / "siemens_financials_wide.tsv"
+            workbook_path = root / "siemens_financials.xlsx"
+            write_tsv(tsv_path, self.quarters)
+            write_workbook(workbook_path, self.quarters, self.years)
+            sheet = load_workbook(workbook_path, data_only=True)["Quarterly"]
+            lines = tsv_path.read_text().splitlines()
+
+        width = len(lines[0].split("\t"))
+        for row_index, line in enumerate(lines, start=1):
+            cells = line.split("\t") + [""] * width
+            for column_index, expected in enumerate(cells[:width], start=1):
+                actual = sheet.cell(row=row_index, column=column_index).value or ""
+                self.assertEqual(actual, expected)
+
     def test_verification_report_passes_for_generated_outputs(self):
         with TemporaryDirectory() as temp_dir:
             paths = self._write_temp_outputs(Path(temp_dir))
-            report = verify_outputs(paths["tsv"], paths["audit"], Path("data"), paths["report"])
+            report = verify_outputs(paths["tsv"], paths["audit"], Path("data"), paths["report"], paths["workbook"])
 
         self.assertTrue(report["metadata"]["passed"], report["issues"][:5])
         self.assertEqual(report["metadata"]["columns_checked"], 68)
+        self.assertEqual(report["metadata"]["year_columns_checked"], 16)
+        self.assertTrue(report["metadata"]["workbook_checked"])
         self.assertEqual(report["metadata"]["issue_counts"], {})
 
     def test_verification_catches_tsv_audit_mismatch(self):
@@ -293,6 +357,21 @@ class SiemensExtractorTests(unittest.TestCase):
         self.assertFalse(report["metadata"]["passed"])
         self.assertIn("missing_source_line", report["metadata"]["issue_counts"])
 
+    def test_verification_catches_yearly_workbook_mismatch(self):
+        with TemporaryDirectory() as temp_dir:
+            paths = self._write_temp_outputs(Path(temp_dir))
+            workbook = load_workbook(paths["workbook"])
+            sheet = workbook["Yearly"]
+            row = OUTPUT_ROWS.index("Net Income") + 2
+            column = list(self.years).index("FY2024") + 2
+            sheet.cell(row=row, column=column, value="999")
+            workbook.save(paths["workbook"])
+
+            report = verify_outputs(paths["tsv"], paths["audit"], Path("data"), paths["report"], paths["workbook"])
+
+        self.assertFalse(report["metadata"]["passed"])
+        self.assertIn("workbook_yearly_audit_mismatch", report["metadata"]["issue_counts"])
+
     def test_audit_flags_reconstructed_values(self):
         reconstructed = [
             source
@@ -311,10 +390,13 @@ class SiemensExtractorTests(unittest.TestCase):
                 self.assertTrue(all(item["passed"] for item in quarter.validations))
 
     def _write_temp_outputs(self, root: Path) -> dict[str, Path]:
+        """Write complete temporary TSV and audit outputs for verifier tests."""
         tsv_path = root / "siemens_financials_wide.tsv"
         audit_path = root / "siemens_financials_audit.json"
         report_path = root / "siemens_financials_verification_report.json"
+        workbook_path = root / "siemens_financials.xlsx"
         write_tsv(tsv_path, self.quarters)
+        write_workbook(workbook_path, self.quarters, self.years)
         write_audit(
             audit_path,
             self.quarters,
@@ -322,10 +404,12 @@ class SiemensExtractorTests(unittest.TestCase):
             self.metadata["duplicates"],
             self.metadata["sample_warnings"],
             self.metadata["overrides_applied"],
+            years=self.years,
         )
-        return {"tsv": tsv_path, "audit": audit_path, "report": report_path}
+        return {"tsv": tsv_path, "audit": audit_path, "report": report_path, "workbook": workbook_path}
 
     def _write_minimal_verification_fixture(self, root: Path) -> tuple[Path, Path]:
+        """Create a one-cell TSV/audit fixture that still references a real PDF line."""
         tsv_path = root / "minimal.tsv"
         audit_path = root / "minimal_audit.json"
         source = self.quarters["Q226"].sources["Digital Industries"]
@@ -344,9 +428,11 @@ class SiemensExtractorTests(unittest.TestCase):
         return tsv_path, audit_path
 
     def _empty_quarter(self, code: str, fiscal_year: int, quarter: int) -> QuarterData:
+        """Return a blank quarter shaped like pipeline output for unit fixtures."""
         return QuarterData(code=code, fiscal_year=fiscal_year, quarter=quarter, source_pdf="main.pdf")
 
     def _supplemental_balance_source(self, text: str | None = None) -> SupplementalBalanceDocument:
+        """Build a supplemental balance document fixture with optional page text."""
         document = PdfDocument(
             path=Path("balance_sheet_supplemental/2009-q1-financial-statement-e.pdf"),
             sha256="test-sha",
@@ -364,6 +450,7 @@ class SiemensExtractorTests(unittest.TestCase):
         )
 
     def _balance_sheet_text(self) -> str:
+        """Return minimal balance-sheet text that exercises supplemental parsing."""
         return "\n".join(
             [
                 "12/31/08 9/30/08",

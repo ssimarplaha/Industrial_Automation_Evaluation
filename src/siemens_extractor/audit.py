@@ -1,14 +1,17 @@
+"""Serialize extracted quarter data into the audit JSON contract."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from typing import Any
 
-from .models import QuarterData, SourceRecord
-from .periods import quarter_sort_key
+from .models import QuarterData, SourceRecord, YearData
+from .periods import quarter_sort_key, year_sort_key
 
 
 def source_to_dict(source: SourceRecord) -> dict[str, Any]:
+    """Convert a source record into the stable JSON audit shape."""
     return {
         "source_pdf": source.source_pdf,
         "page": source.page,
@@ -30,12 +33,16 @@ def write_audit(
     sample_warnings: list[str],
     overrides_applied: list[str],
     balance_sheet_coverage: dict[str, Any] | None = None,
+    years: dict[str, YearData] | None = None,
 ) -> None:
+    """Write the audit payload that explains every exported non-empty value."""
+    years = years or {}
     payload = {
         "metadata": {
             "processed_files": [path.name for path in processed_files],
             "duplicates_skipped": duplicates,
             "columns": sorted(quarters, key=quarter_sort_key),
+            "year_columns": sorted(years, key=year_sort_key),
             "sample_reconciliation_warnings": sample_warnings,
             "overrides_applied": overrides_applied,
             "balance_sheet_coverage": balance_sheet_coverage or {},
@@ -52,6 +59,17 @@ def write_audit(
                 "warnings": quarter.warnings,
             }
             for code, quarter in sorted(quarters.items(), key=lambda item: quarter_sort_key(item[0]))
+        },
+        "years": {
+            code: {
+                "fiscal_year": year.fiscal_year,
+                "source_quarters": year.source_quarters,
+                "values": year.values,
+                "sources": {row: source_to_dict(source) for row, source in sorted(year.sources.items())},
+                "validations": year.validations,
+                "warnings": year.warnings,
+            }
+            for code, year in sorted(years.items(), key=lambda item: year_sort_key(item[0]))
         },
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

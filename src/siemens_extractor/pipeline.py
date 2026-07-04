@@ -1,3 +1,5 @@
+"""CLI and package pipeline for extracting Siemens financial TSV outputs."""
+
 from __future__ import annotations
 
 import argparse
@@ -24,10 +26,12 @@ from .validation import (
     validate_quarter,
 )
 from .verification import verify_outputs
-from .writer import write_tsv
+from .writer import write_tsv, write_workbook
+from .yearly import calculate_years
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse CLI arguments for input, output, and optional override paths."""
     parser = argparse.ArgumentParser(description="Extract Siemens quarterly financials to TSV.")
     parser.add_argument("--input-dir", type=Path, default=Path("data"), help="Directory containing PDFs.")
     parser.add_argument("--output-dir", type=Path, default=Path("output"), help="Directory for TSV/audit output.")
@@ -41,6 +45,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def extract_all(input_dir: Path, overrides_path: Path | None = None) -> tuple[dict[str, QuarterData], dict[str, Any]]:
+    """Run discovery, parsing, validation, metrics, and metadata assembly."""
     documents, duplicates = load_documents(input_dir)
     if not documents:
         raise ValueError(f"No PDFs found in {input_dir}")
@@ -80,16 +85,20 @@ def extract_all(input_dir: Path, overrides_path: Path | None = None) -> tuple[di
 
 
 def main() -> int:
+    """Write TSV, audit JSON, and verification report for the configured inputs."""
     args = parse_args()
     input_dir = args.input_dir.resolve()
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     quarters, metadata = extract_all(input_dir, args.overrides)
+    years = calculate_years(quarters)
     tsv_path = output_dir / "siemens_financials_wide.tsv"
     audit_path = output_dir / "siemens_financials_audit.json"
     report_path = output_dir / "siemens_financials_verification_report.json"
+    workbook_path = output_dir / "siemens_financials.xlsx"
     write_tsv(tsv_path, quarters)
+    write_workbook(workbook_path, quarters, years)
     write_audit(
         audit_path,
         quarters,
@@ -98,10 +107,12 @@ def main() -> int:
         metadata["sample_warnings"],
         metadata["overrides_applied"],
         metadata["balance_sheet_coverage"],
+        years,
     )
-    report = verify_outputs(tsv_path, audit_path, input_dir, report_path)
+    report = verify_outputs(tsv_path, audit_path, input_dir, report_path, workbook_path)
 
     print(f"Wrote {tsv_path}")
+    print(f"Wrote {workbook_path}")
     print(f"Wrote {audit_path}")
     print(f"Wrote {report_path}")
     if metadata["duplicates"]:

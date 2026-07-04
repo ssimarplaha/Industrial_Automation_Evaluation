@@ -1,3 +1,5 @@
+"""Reconstruct 2018 old-bucket segments from transition division rows."""
+
 from __future__ import annotations
 
 from ..config import DIVISION_TO_BUCKET_2018
@@ -6,9 +8,12 @@ from .base import SegmentParser, assign_bucket_totals, first_revenue_after_headi
 
 
 class Division2018Parser(SegmentParser):
+    """Parser for FY2018 transition layout with Healthineers naming variants."""
+
     parser_family = "division_2018"
 
     def extract(self, document: PdfDocument, quarters: dict[str, QuarterData]) -> None:
+        """Map required 2018 divisions into fixed historical segment buckets."""
         bucket_values, bucket_sources, found = first_revenue_after_heading(
             document,
             DIVISION_TO_BUCKET_2018,

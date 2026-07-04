@@ -1,3 +1,5 @@
+"""Fill missing quarterly balance-sheet rows from audited supplemental PDFs."""
+
 from __future__ import annotations
 
 import json
@@ -53,6 +55,8 @@ BALANCE_REPORT_ROWS = {
 
 @dataclass(frozen=True)
 class SupplementalBalanceDocument:
+    """A manifest-backed supplemental PDF used only for balance-sheet coverage."""
+
     quarter: str
     filename: str
     sha256: str
@@ -61,12 +65,14 @@ class SupplementalBalanceDocument:
 
 
 def supplemental_manifest_path(input_dir: Path) -> Path:
+    """Return the expected manifest path below the Siemens input directory."""
     return input_dir / SUPPLEMENTAL_BALANCE_DIR / SUPPLEMENTAL_BALANCE_MANIFEST
 
 
 def load_supplemental_balance_documents(
     input_dir: Path,
 ) -> tuple[list[SupplementalBalanceDocument], bool]:
+    """Load supplemental balance PDFs and report whether the manifest existed."""
     manifest_path = supplemental_manifest_path(input_dir)
     if not manifest_path.exists():
         return [], False
@@ -83,6 +89,7 @@ def load_supplemental_balance_documents(
 
 
 def empty_supplemental_balance_coverage() -> dict[str, Any]:
+    """Create the audit metadata scaffold for supplemental balance coverage."""
     return {
         "required_quarters": REQUIRED_SUPPLEMENTAL_BALANCE_QUARTERS,
         "source_files_used": [],
@@ -99,6 +106,7 @@ def apply_supplemental_balance_documents(
     *,
     manifest_found: bool,
 ) -> dict[str, Any]:
+    """Apply supplemental native balance rows without creating new output quarters."""
     coverage = empty_supplemental_balance_coverage()
     if manifest_found:
         _validate_required_manifest_coverage(documents)
@@ -142,6 +150,7 @@ def _load_manifest_entry(
     entry: Any,
     manifest_path: Path,
 ) -> SupplementalBalanceDocument:
+    """Validate one manifest entry and load its referenced supplemental PDF."""
     if not isinstance(entry, dict):
         raise ValueError(f"{manifest_path} entries must be objects.")
     quarter = _required_text(entry, "quarter", manifest_path)
@@ -178,6 +187,7 @@ def _apply_parsed_balance_rows(
     parsed_rows: dict[str, tuple[str, list[int]]],
     page_number: int,
 ) -> tuple[list[str], list[str]]:
+    """Fill blank native rows or confirm matching existing native values."""
     quarter = quarters[source.quarter]
     filled_rows: list[str] = []
     matched_rows: list[str] = []
@@ -222,6 +232,7 @@ def _apply_parsed_balance_rows(
 
 
 def _validate_required_manifest_coverage(documents: list[SupplementalBalanceDocument]) -> None:
+    """Fail when the manifest omits a required supplemental quarter."""
     declared = {document.quarter for document in documents}
     missing = sorted(set(REQUIRED_SUPPLEMENTAL_BALANCE_QUARTERS) - declared, key=quarter_sort_key)
     if missing:
@@ -229,6 +240,7 @@ def _validate_required_manifest_coverage(documents: list[SupplementalBalanceDocu
 
 
 def _required_text(entry: dict[str, Any], key: str, manifest_path: Path) -> str:
+    """Read a required non-empty text field from one manifest entry."""
     value = entry.get(key)
     if not isinstance(value, str) or not value:
         raise ValueError(f"{manifest_path} entry is missing text field {key!r}.")
@@ -236,6 +248,7 @@ def _required_text(entry: dict[str, Any], key: str, manifest_path: Path) -> str:
 
 
 def _balance_row_sort_key(row: str) -> tuple[int, str]:
+    """Sort balance rows by parser pattern order, then name for unknown rows."""
     rows = [name for name, _pattern in BALANCE_ROW_PATTERNS]
     try:
         return rows.index(row), row

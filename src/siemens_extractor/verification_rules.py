@@ -1,3 +1,5 @@
+"""Pure rules used to replay calculated audit values during verification."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,6 +10,8 @@ from .periods import quarter_code, quarter_sort_key
 
 
 class Unknown:
+    """Sentinel for calculated rows that have no registered replay rule."""
+
     pass
 
 
@@ -15,6 +19,7 @@ UNKNOWN = Unknown()
 
 
 def expected_calculated_value(code: str, row: str, source: dict[str, Any], quarters: dict[str, Any]) -> Any:
+    """Return the expected value for one calculated audit source."""
     values = quarters[code]["values"]
     raw_values = source.get("raw_values", [])
     raw_line = str(source.get("raw_line") or "")
@@ -47,6 +52,7 @@ def expected_calculated_value(code: str, row: str, source: dict[str, Any], quart
 
 
 def expected_yoy_value(code: str, row: str, quarters: dict[str, Any]) -> Any:
+    """Recalculate a Y/Y row from the current and prior-year audit values."""
     source_row = YY_ROWS.get(row)
     if source_row is None:
         return UNKNOWN
@@ -66,6 +72,7 @@ def expected_yoy_value(code: str, row: str, quarters: dict[str, Any]) -> Any:
 
 
 def calculated_values_equal(expected: Any, actual: Any) -> bool:
+    """Compare calculated values using tight tolerance for floats."""
     if expected is None:
         return actual is None
     if isinstance(expected, float) or isinstance(actual, float):
