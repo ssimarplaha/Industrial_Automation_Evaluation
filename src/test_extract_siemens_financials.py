@@ -6,6 +6,11 @@ from tempfile import TemporaryDirectory
 from extract_siemens_financials import extract_all, int_tokens
 from siemens_extractor.audit import write_audit
 from siemens_extractor.config import OUTPUT_ROWS
+from siemens_extractor.models import PdfDocument, QuarterData, SourceRecord
+from siemens_extractor.supplemental_balance import (
+    SupplementalBalanceDocument,
+    apply_supplemental_balance_documents,
+)
 from siemens_extractor.verification import verify_outputs
 from siemens_extractor.writer import format_cell, write_tsv
 
@@ -145,6 +150,72 @@ class SiemensExtractorTests(unittest.TestCase):
                     self.assertEqual(self.quarters[code].values[row], value)
                     self.assertEqual(self.quarters[code].sources[row].source_type, "native")
 
+    def test_supplemental_balance_fills_missing_native_quarter(self):
+        quarters = {"Q109": self._empty_quarter("Q109", 2009, 1)}
+        coverage = apply_supplemental_balance_documents(
+            quarters,
+            [self._supplemental_balance_source()],
+            manifest_found=False,
+        )
+
+        self.assertEqual(quarters["Q109"].values["Cash & Cash Equivalets"], 6071)
+        self.assertEqual(quarters["Q109"].values["Total Assets"], 97422)
+        self.assertEqual(quarters["Q109"].sources["Total Assets"].source_type, "native")
+        self.assertEqual(
+            quarters["Q109"].sources["Total Assets"].source_pdf,
+            "balance_sheet_supplemental/2009-q1-financial-statement-e.pdf",
+        )
+        self.assertEqual(coverage["filled_quarters"], ["Q109"])
+
+    def test_supplemental_balance_does_not_create_income_columns(self):
+        quarters = {"Q109": self._empty_quarter("Q109", 2009, 1)}
+        quarters["Q109"].values["Total Revenue"] = 19634
+        text = "Revenue 1 2\n" + self._balance_sheet_text()
+
+        apply_supplemental_balance_documents(
+            quarters,
+            [self._supplemental_balance_source(text=text)],
+            manifest_found=False,
+        )
+
+        self.assertEqual(set(quarters), {"Q109"})
+        self.assertNotIn("Q108", quarters)
+        self.assertEqual(quarters["Q109"].values["Total Revenue"], 19634)
+
+    def test_supplemental_balance_refuses_conflicting_native_value(self):
+        quarters = {"Q109": self._empty_quarter("Q109", 2009, 1)}
+        quarters["Q109"].values["Cash & Cash Equivalets"] = 999
+        quarters["Q109"].sources["Cash & Cash Equivalets"] = SourceRecord(
+            source_pdf="data.pdf",
+            page=1,
+            parser_family="balance_sheet",
+            raw_line="Cash and cash equivalents 999",
+            raw_values=[999],
+            normalized_row="Cash & Cash Equivalets",
+            normalized_value=999,
+            source_type="native",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Supplemental balance conflict"):
+            apply_supplemental_balance_documents(
+                quarters,
+                [self._supplemental_balance_source()],
+                manifest_found=False,
+            )
+
+    def test_supplemental_balance_reports_native_row_omissions(self):
+        quarters = {"Q109": self._empty_quarter("Q109", 2009, 1)}
+        coverage = apply_supplemental_balance_documents(
+            quarters,
+            [self._supplemental_balance_source()],
+            manifest_found=False,
+        )
+
+        missing = coverage["missing_rows_by_quarter"]["Q109"]
+        self.assertIn("Goodwill", missing)
+        self.assertNotIn("Cash & Cash Equivalets", missing)
+        self.assertNotIn("Goodwill", quarters["Q109"].values)
+
     def test_modern_balance_sheet_hidden_components_are_audited(self):
         q420 = self.quarters["Q420"]
         self.assertEqual(q420.values["Contract Assets"], 5545)
@@ -177,6 +248,15 @@ class SiemensExtractorTests(unittest.TestCase):
             actual_rows = [line.split("\t")[0] for line in path.read_text().splitlines()[1:]]
         expected_rows = [row or "" for row in OUTPUT_ROWS]
         self.assertEqual(actual_rows, expected_rows)
+
+    def test_tsv_has_no_trailing_whitespace(self):
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "siemens_financials_wide.tsv"
+            write_tsv(path, self.quarters)
+            lines = path.read_text().splitlines()
+
+        self.assertTrue(lines)
+        self.assertTrue(all(not line.endswith((" ", "\t")) for line in lines))
 
     def test_verification_report_passes_for_generated_outputs(self):
         with TemporaryDirectory() as temp_dir:
@@ -262,6 +342,43 @@ class SiemensExtractorTests(unittest.TestCase):
         tsv_path.write_text("Financial Years\tQ226\nDigital Industries\t4,626\n")
         audit_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         return tsv_path, audit_path
+
+    def _empty_quarter(self, code: str, fiscal_year: int, quarter: int) -> QuarterData:
+        return QuarterData(code=code, fiscal_year=fiscal_year, quarter=quarter, source_pdf="main.pdf")
+
+    def _supplemental_balance_source(self, text: str | None = None) -> SupplementalBalanceDocument:
+        document = PdfDocument(
+            path=Path("balance_sheet_supplemental/2009-q1-financial-statement-e.pdf"),
+            sha256="test-sha",
+            fiscal_year=2009,
+            quarter=1,
+            code="Q109",
+            pages=[text or self._balance_sheet_text()],
+        )
+        return SupplementalBalanceDocument(
+            quarter="Q109",
+            filename="2009-q1-financial-statement-e.pdf",
+            sha256="test-sha",
+            source_url="https://example.test/2009-q1-financial-statement-e.pdf",
+            document=document,
+        )
+
+    def _balance_sheet_text(self) -> str:
+        return "\n".join(
+            [
+                "12/31/08 9/30/08",
+                "Cash and cash equivalents 6,071 6,893",
+                "Trade and other receivables 16,145 15,785",
+                "Other current financial assets 4,720 3,116",
+                "Inventories 15,146 14,509",
+                "Total current assets 44,602 43,242",
+                "Total assets 97,422 94,463",
+                "Total current liabilities 43,006 42,451",
+                "Total liabilities 70,661 67,083",
+                "Total equity attributable to shareholders of Siemens AG 26,147 26,774",
+                "Total liabilities and equity 97,422 94,463",
+            ]
+        )
 
 
 if __name__ == "__main__":

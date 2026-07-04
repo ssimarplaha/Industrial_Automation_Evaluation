@@ -28,8 +28,15 @@ def write_tsv(path: Path, quarters: dict[str, QuarterData]) -> None:
     lines = ["Financial Years\t" + "\t".join(columns)]
     for row in OUTPUT_ROWS:
         if row is None:
-            lines.append("\t".join([""] * (len(columns) + 1)))
+            lines.append("")
             continue
         cells = [row] + [format_cell(quarters[column].values.get(row), row) for column in columns]
-        lines.append("\t".join(cells))
+        lines.append("\t".join(without_trailing_empty_cells(cells)))
     path.write_text("\n".join(lines) + "\n")
+
+
+def without_trailing_empty_cells(cells: list[str]) -> list[str]:
+    trimmed = list(cells)
+    while trimmed and trimmed[-1] == "":
+        trimmed.pop()
+    return trimmed

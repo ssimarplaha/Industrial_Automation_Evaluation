@@ -29,6 +29,7 @@ def write_audit(
     duplicates: list[dict[str, str]],
     sample_warnings: list[str],
     overrides_applied: list[str],
+    balance_sheet_coverage: dict[str, Any] | None = None,
 ) -> None:
     payload = {
         "metadata": {
@@ -37,6 +38,7 @@ def write_audit(
             "columns": sorted(quarters, key=quarter_sort_key),
             "sample_reconciliation_warnings": sample_warnings,
             "overrides_applied": overrides_applied,
+            "balance_sheet_coverage": balance_sheet_coverage or {},
         },
         "quarters": {
             code: {

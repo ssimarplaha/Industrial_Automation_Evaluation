@@ -13,6 +13,20 @@ CONTRACT_ASSETS = "Contract Assets"
 CONTRACT_LIABILITIES = "Contract Liabilities"
 NONCONTROLLING_INTERESTS = "Non-controlling interests"
 TOTAL_EQUITY = "Total Equity"
+FOOTNOTE_PREFIX_ROWS = {
+    "Assetes classifies as held for disposal",
+    "Liabilities associated with assets classified as held",
+    "Short-Term Debt",
+    "Long-Term Debt",
+}
+CORE_BALANCE_ROWS = {
+    "Cash & Cash Equivalets",
+    "Total Current Assets (TCA)",
+    "Total Assets",
+    "Total Current Liabilities",
+    "Total Liabilities",
+    "L+S/E",
+}
 
 BALANCE_ROW_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("Other Current Financial Assets", re.compile(r"^Other current financial assets\b", re.I)),
@@ -80,6 +94,7 @@ def extract_balance_sheet(document: PdfDocument, quarters: dict[str, QuarterData
 
 
 def find_balance_sheet_page(pages: list[str]) -> tuple[int, str]:
+    best_candidate: tuple[int, int, int, str] | None = None
     for index, text in enumerate(pages, start=1):
         lower = text.lower()
         if (
@@ -87,7 +102,13 @@ def find_balance_sheet_page(pages: list[str]) -> tuple[int, str]:
             and "total assets" in lower
             and "total liabilities and equity" in lower
         ):
-            return index, text
+            parsed_rows = parse_balance_rows(text)
+            score = len(CORE_BALANCE_ROWS & set(parsed_rows))
+            candidate = (score, len(parsed_rows), index, text)
+            if best_candidate is None or candidate[:2] > best_candidate[:2]:
+                best_candidate = candidate
+    if best_candidate is not None and (best_candidate[0] >= 4 or best_candidate[1] >= 8):
+        return best_candidate[2], best_candidate[3]
     raise ValueError("Could not find consolidated statements of financial position page")
 
 
@@ -102,9 +123,16 @@ def parse_balance_rows(text: str) -> dict[str, tuple[str, list[int]]]:
             continue
         for row, pattern in BALANCE_ROW_PATTERNS:
             if pattern.search(line):
+                values = normalize_balance_values(row, values)
                 rows.setdefault(row, (line, values))
                 break
     return rows
+
+
+def normalize_balance_values(row: str, values: list[int]) -> list[int]:
+    if row in FOOTNOTE_PREFIX_ROWS and len(values) > 2 and abs(values[0]) <= 20:
+        return values[1:]
+    return values
 
 
 def assign_balance_values(

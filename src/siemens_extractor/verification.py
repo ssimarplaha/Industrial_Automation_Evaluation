@@ -8,6 +8,7 @@ from typing import Any
 from .discovery import extract_pages, pdf_fiscal_period
 from .numbers import int_tokens
 from .periods import quarter_sort_key
+from .supplemental_balance import SUPPLEMENTAL_BALANCE_DIR
 from .verification_rules import UNKNOWN, calculated_values_equal, expected_calculated_value
 from .writer import format_cell
 
@@ -294,7 +295,7 @@ def _verify_native_source(
         return
 
     raw_values = source.get("raw_values", [])
-    if raw_values and not any(int_tokens(candidate) == raw_values for candidate in candidates):
+    if raw_values and not any(_source_tokens_match(int_tokens(candidate), raw_values) for candidate in candidates):
         _add_issue(
             issues,
             "source_tokens_mismatch",
@@ -337,7 +338,7 @@ def _pages_for_source(
     issues: list[dict[str, Any]],
 ) -> list[str] | None:
     if source_pdf not in page_cache:
-        path = input_dir / source_pdf
+        path = _source_pdf_path(input_dir, source_pdf)
         if not path.exists():
             _add_issue(
                 issues,
@@ -350,6 +351,17 @@ def _pages_for_source(
     return page_cache[source_pdf]
 
 
+def _source_pdf_path(input_dir: Path, source_pdf: str) -> Path:
+    source_path = Path(source_pdf)
+    candidates = [source_path if source_path.is_absolute() else input_dir / source_path]
+    if not source_path.is_absolute():
+        candidates.append(input_dir / SUPPLEMENTAL_BALANCE_DIR / source_path.name)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def _matching_page_lines(raw_line: str, page_text: str) -> list[str]:
     raw_norm = _normalize_line(raw_line)
     if not raw_norm:
@@ -360,6 +372,12 @@ def _matching_page_lines(raw_line: str, page_text: str) -> list[str]:
         if raw_norm in line_norm or line_norm in raw_norm:
             matches.append(line.strip())
     return matches
+
+
+def _source_tokens_match(source_tokens: list[int], raw_values: list[int]) -> bool:
+    if source_tokens == raw_values:
+        return True
+    return len(source_tokens) > len(raw_values) and source_tokens[-len(raw_values) :] == raw_values
 
 
 def _normalize_line(line: str) -> str:

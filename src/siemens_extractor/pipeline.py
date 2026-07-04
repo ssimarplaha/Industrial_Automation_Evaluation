@@ -12,6 +12,10 @@ from .metrics import calculate_metrics
 from .models import QuarterData
 from .periods import quarter_sort_key
 from .segments import segment_parser_for
+from .supplemental_balance import (
+    apply_supplemental_balance_documents,
+    load_supplemental_balance_documents,
+)
 from .validation import (
     add_other_segment_values,
     add_sample_reconciliation_warnings,
@@ -40,6 +44,7 @@ def extract_all(input_dir: Path, overrides_path: Path | None = None) -> tuple[di
     documents, duplicates = load_documents(input_dir)
     if not documents:
         raise ValueError(f"No PDFs found in {input_dir}")
+    supplemental_documents, supplemental_manifest_found = load_supplemental_balance_documents(input_dir)
 
     all_quarters: dict[str, QuarterData] = {}
     for document in documents:
@@ -52,6 +57,11 @@ def extract_all(input_dir: Path, overrides_path: Path | None = None) -> tuple[di
                 raise ValueError(f"Duplicate quarter extracted from unique PDFs: {code}")
             all_quarters[code] = quarter_data
 
+    balance_sheet_coverage = apply_supplemental_balance_documents(
+        all_quarters,
+        supplemental_documents,
+        manifest_found=supplemental_manifest_found,
+    )
     overrides_applied = apply_overrides(all_quarters, overrides_path)
     apply_yoy(all_quarters)
     calculate_metrics(all_quarters)
@@ -63,6 +73,7 @@ def extract_all(input_dir: Path, overrides_path: Path | None = None) -> tuple[di
         "duplicates": duplicates,
         "sample_warnings": sample_warnings,
         "overrides_applied": overrides_applied,
+        "balance_sheet_coverage": balance_sheet_coverage,
         "columns": sorted(all_quarters, key=quarter_sort_key),
     }
     return all_quarters, metadata
@@ -86,6 +97,7 @@ def main() -> int:
         metadata["duplicates"],
         metadata["sample_warnings"],
         metadata["overrides_applied"],
+        metadata["balance_sheet_coverage"],
     )
     report = verify_outputs(tsv_path, audit_path, input_dir, report_path)
 

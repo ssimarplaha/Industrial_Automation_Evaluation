@@ -1,0 +1,188 @@
+{
+  "required_quarters": [
+    "Q109",
+    "Q209",
+    "Q309",
+    "Q111",
+    "Q211",
+    "Q311",
+    "Q113",
+    "Q213",
+    "Q313",
+    "Q115",
+    "Q215",
+    "Q315",
+    "Q117",
+    "Q217",
+    "Q317",
+    "Q119",
+    "Q219",
+    "Q319",
+    "Q121",
+    "Q221",
+    "Q321",
+    "Q123",
+    "Q223",
+    "Q323",
+    "Q125",
+    "Q225"
+  ],
+  "sources": [
+    {
+      "quarter": "Q109",
+      "filename": "2009-q1-financial-statement-e.pdf",
+      "sha256": "bbaea70b8fee40e7698e156e1bfc3a7e2ec40c92e30a1635bc2e7973bd0b5192",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/2ICRQLCLVXVRO97xLovPeH/66a5706b9385cde2d36007c02e5550ed/2009-q1-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q209",
+      "filename": "2009-q2-financial-statement-e.pdf",
+      "sha256": "e3c5ffc319ea29d97c682a17fb0ad63a8534e1b7f7b40b6325d24b8bea1a1a3c",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/4PRzlbeRZMWjou98DwePeJ/c03c34a45478ba06e34cd4f053e001db/2009-q2-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q309",
+      "filename": "2009-q3-financial-statement-e.pdf",
+      "sha256": "6d0cc35379f319c62492870d2b5e4e0d2e0873e724e9877175c0791ce5d01aca",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/7KniHbmJzkerTxOk4GfVHY/4fa4ac5a28dd8e8db01b1bfb3d35b29c/2009-q3-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q111",
+      "filename": "2011-q1-financial-statement-e.pdf",
+      "sha256": "ad53979dd6f39f68b723151e074bab9d48162db4dd5a53db1485579bcb7bb8a6",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/59cO8GSngqPGcXALzdLKF/22c18e06d0993eb1eb5cf5ec64ef18f5/2011-q1-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q211",
+      "filename": "2011-q2-financial-statement-e.pdf",
+      "sha256": "4ca1d4be9c063efc431f5c53731a198fade55dab947db11d68a5fd21f72f056e",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/6FqgqTpTtAkLtCA1jjT4U5/9a57a0c2f3b9f257e830d7551adf8976/2011-q2-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q311",
+      "filename": "2011-q3-financial-statement-e.pdf",
+      "sha256": "cc7c9be6e21672f38fe56551b6a099ea17f19e33778f0d2248519f806a12a4fe",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/2zOifN0ldn30wV3GW6zbLY/574e4350b3daddd08ef8371796874638/2011-q3-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q113",
+      "filename": "2013-q1-financial-statement-e.pdf",
+      "sha256": "f2679b66219e681069b23505cb2fcabab310cd24689b85424c1a5522fe66ce67",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/7a0cpKNXpwORj2DdbH5Piu/ee539c7137e1545bb9a587c6ffecbcb8/financials-q1-2013-e.pdf"
+    },
+    {
+      "quarter": "Q213",
+      "filename": "2013-q2-financial-statement-e.pdf",
+      "sha256": "6d6aab477badb72b788c12bf32a25303a87de531ce47a0a7c676c4c545b0a48e",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/4cjvyRhzlNNq9g74osXICt/78014a671e6642342aaba77faf93993c/financials-q2-2013-e.pdf"
+    },
+    {
+      "quarter": "Q313",
+      "filename": "2013-q3-financial-statement-e.pdf",
+      "sha256": "d0a2de57880d46ce6affcaa8139a2794235f494df050b2a12df7985b61be6e78",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/5wSnAagm5EjkM76jmp0xMd/3d32893ac4de17005ccd559205467ec6/2013-q3-financial-statement-e.pdf"
+    },
+    {
+      "quarter": "Q115",
+      "filename": "2015-q1-interim-report.pdf",
+      "sha256": "9364525f82615ee2fa4b2a095954c2c68c42970b8950a5b4b204283347680d15",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/1DECvrcY6JWFfFKseYOmY4/df66e4be311c292cf7a3399233ec9c1a/q1-interim-report.pdf"
+    },
+    {
+      "quarter": "Q215",
+      "filename": "2015-q2-interim-report.pdf",
+      "sha256": "ed230df1d7e18447ace3f235d004278f1f700845e80135ea294856802c480553",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/7hUpiTjJOIhGyFzdkMBSzM/3c1ac105035fbf739b504bda3073b123/q2-interim-report.pdf"
+    },
+    {
+      "quarter": "Q315",
+      "filename": "2015-q3-interim-report.pdf",
+      "sha256": "3ce6bd1f976f915895ddab2eed3af345b353e264afc40b038ad543622afb7b03",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/6NjUSqlxkfKMquMZLaQVgp/29e7eafca01cadcb1ff64561070f70de/q3-interim-report.pdf"
+    },
+    {
+      "quarter": "Q117",
+      "filename": "2017-q1-earnings-release-e.pdf",
+      "sha256": "9289c0d3ca5bfad813cabf008967c2641ec0920fd98e6f772ac2376115322efc",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/4DC6IqynAQLZaq98HaTduQ/6f0f6959f41c7937e0abcb54f4df8afd/2017-q1-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q217",
+      "filename": "2017-q2-earnings-release-e.pdf",
+      "sha256": "1f984794557d696aef9547f8f5cd0e841c39e66116c1369725799811c33f489e",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/3SKiMKJ28anse4FBdPGM7R/c39394d8456fa4e3eebc667a8c885af3/2017-q2-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q317",
+      "filename": "2017-q3-earnings-release-e.pdf",
+      "sha256": "9015c6c5298abbe9a026736e18666a86d6c3823685d8005fc4ab731e386d37f3",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/7IrTPUwS90n9eEHCU823dk/09f4f20eac18056b7493f2aed43d4a57/2017-q3-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q119",
+      "filename": "2019-q1-earnings-release-e.pdf",
+      "sha256": "f9a213fbf45e479ab1a026b420cfb87f942a685e56ecc998ddf2b95594e49e45",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/3P15CIKl0Frf2rAukhweJo/c13be7daaf9f840ba577520d6213b40b/2019-q1-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q219",
+      "filename": "2019-q2-earnings-release-e.pdf",
+      "sha256": "ed1f48c0e22277cea0c3ce5f17531275f515f2bfb2f2cca96bf8dba3793da3a3",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/6ustw148ThEoApCAiC1eA1/5faa84544ed6a33336ff0567828bbbe7/2019-q2-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q319",
+      "filename": "2019-q3-earnings-release-e.pdf",
+      "sha256": "a2c837ce0d7fe6cf44fd3d2ba39715b4915e2cf47b5f0dbbeefc52b006a5b487",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/y83f8Yv0cRhhAKeTw8F5g/97ddbfd10b1cd2851bb1d46e4de00f41/2019-q3-earnings-release-e.pdf"
+    },
+    {
+      "quarter": "Q121",
+      "filename": "2021-q1-earnings-release-en.pdf",
+      "sha256": "8e9442f65c0b7355315bfc6355ce472fa10c31f6703b39b6b602701d02820163",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/3ufsjtj45hqmub9LmUX6MK/df1a7de9f6ca710940d46a9cbe92ac19/2021-q1-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q221",
+      "filename": "2021-q2-earnings-release-en.pdf",
+      "sha256": "40f582f03a0b1f1da91e5d9548bf973bda0a9484f8b7251d962ef3b4e198cf85",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/4McCZ3m4wMKcIb0wGtj1q8/d7a6cc847685d9cefa90936302767cfb/2021-q2-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q321",
+      "filename": "2021-q3-earnings-release-en.pdf",
+      "sha256": "07b743a74b58c1664f3532a7f6cac875af0b7c564152a5b2be79923bbeb9f8df",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/54NK2PnFJqusSmYupHGvpm/44f1b91c64d68cb7c53dba41ea487df2/2021-q3-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q123",
+      "filename": "2023-q1-earnings-release-en.pdf",
+      "sha256": "1691518de564be527ba054840de13fbb1d861ef15fd3a551212e24b4f2af3086",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/3vV4xbQIU3YqWZhh3kD5DW/ceed9347f7ca51b95778b370dc66fab1/2023-q1-p-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q223",
+      "filename": "2023-q2-earnings-release-en.pdf",
+      "sha256": "1877e931f96d84adb46ce3e5e49982ff13790430e2ac3db578560133633ba0d2",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/789qmco89glqGF1763i4Q0/164287a153ef03d48583761c86756720/2023-q2-p-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q323",
+      "filename": "2023-q3-earnings-release-en.pdf",
+      "sha256": "c334637867ecf221f4382dcec1684ae1752752a52e2b34aebd1fe5ed01810754",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/3YLSPTmG8JZ3HkBFm4oZ8X/369d1b1f7b174fcaedde3038d523e078/2023-q3-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q125",
+      "filename": "2025-q1-earnings-release-en.pdf",
+      "sha256": "23cdfc1aaab34a33fb9a2fff15faa4cea65cf6c6b93f9b823f18ebf0c587c14c",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/4TfxRMffD0rMZmmstZQ8pv/1239ff2cc28b60882dfc8ac61bc47d01/2025-q1-earnings-release-en.pdf"
+    },
+    {
+      "quarter": "Q225",
+      "filename": "2025-q2-earnings-release-en.pdf",
+      "sha256": "d77e1c7067f6a4acff334db6ae9f8f37533adaa32545ce3708e44580d31d0ac3",
+      "source_url": "https://assets.ctfassets.net/17si5cpawjzf/1zor5SrK96osYnc4oPekTk/02b7fc8ed0daf476b10b3e4aa8cd7256/2025-q2-earnings-release-en.pdf"
+    }
+  ]
+}
